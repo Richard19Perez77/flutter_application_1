@@ -45,6 +45,17 @@ class MyAppState extends ChangeNotifier {
     current = WordPair.random();
     notifyListeners();
   }
+
+  var favorites = <WordPair>[];
+
+  void toggleFavorite() {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
+    } else {
+      favorites.add(current);
+    }
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatelessWidget {
@@ -54,35 +65,57 @@ class MyHomePage extends StatelessWidget {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
 
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
     return Scaffold(
-      body: Column(
-        children: [
-          Text('A random idea:'),
-          BigCard(pair: pair),
-          NextButton(appState: appState),
-          const GreenFrog(), // First GreenFrog instance
-          const SizedBox(height: 10),
-          const GreenFrog(), // Second GreenFrog instance
-          const SizedBox(height: 20), // Space between groups
-
-          Frog(
-            color: Colors.greenAccent,
-            child: const Text(
-              "Frog 1",
-              style: TextStyle(color: Colors.black, fontSize: 20),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BigCard(pair: pair),
+            SizedBox(height: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    appState.toggleFavorite();
+                  },
+                  icon: Icon(icon),
+                  label: Text('Like'),
+                ),
+                SizedBox(width: 10),
+                NextButton(appState: appState),
+              ],
             ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Frog(
-            color: Colors.teal,
-            child: const Text(
-              "Frog 2",
-              style: TextStyle(color: Colors.white, fontSize: 20),
+            const GreenFrog(), // First GreenFrog instance
+            const SizedBox(height: 10),
+            const GreenFrog(), // Second GreenFrog instance
+            const SizedBox(height: 20), // Space between groups
+            Frog(
+              color: Colors.greenAccent,
+              child: const Text(
+                "Frog 1",
+                style: TextStyle(color: Colors.black, fontSize: 20),
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 10),
+
+            Frog(
+              color: Colors.teal,
+              child: const Text(
+                "Frog 2",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -122,7 +155,11 @@ class BigCard extends StatelessWidget {
         color: theme.colorScheme.primary,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(pair.asLowerCase, style: style),
+          child: Text(
+            "${pair.first} ${pair.second}",
+            style: style,
+            semanticsLabel: "${pair.first} ${pair.second}",
+          ),
         ),
       ),
     );
