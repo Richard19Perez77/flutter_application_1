@@ -24,10 +24,12 @@ class BigCard extends StatelessWidget {
               children: [
                 Text(
                   pair.first,
+                  key: Key('word_first'),
                   style: style.copyWith(fontWeight: FontWeight.w200),
                 ),
                 Text(
                   pair.second,
+                  key: Key('word_second'),
                   style: style.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
