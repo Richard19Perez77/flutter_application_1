@@ -53,6 +53,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         icon: Icon(Icons.favorite),
                         label: 'Favorites',
                       ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.upload),
+                        label: 'Image Uploader',
+                      ),
                     ],
                     currentIndex: selectedIndex,
                     onTap: (value) {
@@ -80,8 +84,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         label: Text('Favorites'),
                       ),
                       NavigationRailDestination(
-                        icon: Icon(Icons.gamepad),
-                        label: Text('Game'),
+                        icon: Icon(Icons.upload),
+                        label: Text('Image Uploader'),
                       ),
                     ],
                     selectedIndex: selectedIndex,
