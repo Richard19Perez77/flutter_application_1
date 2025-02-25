@@ -1,6 +1,9 @@
+import 'dart:typed_data';
 import 'package:english_words/english_words.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(MyApp());
@@ -75,6 +78,8 @@ class _MyHomePageState extends State<MyHomePage> {
         page = GeneratorPage();
       case 1:
         page = FavoritesPage();
+      case 2:
+        page = ImagePickerApp();
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
@@ -134,6 +139,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       NavigationRailDestination(
                         icon: Icon(Icons.favorite),
                         label: Text('Favorites'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.gamepad),
+                        label: Text('Game'),
                       ),
                     ],
                     selectedIndex: selectedIndex,
@@ -238,6 +247,13 @@ class BigCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class GamePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return (Text("Game"));
   }
 }
 
@@ -349,6 +365,67 @@ class _HistoryListViewState extends State<HistoryListView> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class ImagePickerApp extends StatefulWidget {
+  const ImagePickerApp({super.key});
+
+  @override
+  State<ImagePickerApp> createState() => _ImagePickerAppState();
+}
+
+class _ImagePickerAppState extends State<ImagePickerApp> {
+  Uint8List? _selectedImage;
+
+  // ✅ Pick Image Based on Platform
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    if (kIsWeb) {
+      // Web: Use HTML File Input instead of `image_picker_web`
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          _selectedImage = bytes;
+        });
+      }
+    } else {
+      // Mobile/Desktop: Use `image_picker`
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          _selectedImage = bytes;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Cross-Platform Image Picker")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: _pickImage,
+              child: const Text("Select Image"),
+            ),
+            if (_selectedImage != null) ...[
+              const SizedBox(height: 10),
+              Image.memory(_selectedImage!, height: 200),
+            ],
+          ],
+        ),
       ),
     );
   }
