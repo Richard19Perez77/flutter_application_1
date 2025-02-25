@@ -1,76 +1,74 @@
-// english words package which provides a lib of english word pairs
 import 'package:english_words/english_words.dart';
-// flutter material package, which provides ui components and theming
 import 'package:flutter/material.dart';
-// provider package for state management using ChangeNotifier
 import 'package:provider/provider.dart';
 
 void main() {
-  // entry point of flutter app
-  runApp(MyApp()); // launch with MyApp as root
+  runApp(MyApp());
 }
 
-// no mutable state is stateless
 class MyApp extends StatelessWidget {
-  // optional key for widget id
   const MyApp({super.key});
 
-  // describe the ui tree for this widget
   @override
   Widget build(BuildContext context) {
-    // manage state, auto disposes
     return ChangeNotifierProvider(
-      // provide an instance of MyAppState to the widget tree for state management
       create: (context) => MyAppState(),
       child: MaterialApp(
-        // appliation title
-        title: 'Fun App',
-        // define theme with Material 3
+        title: 'Namer App',
         theme: ThemeData(
-          useMaterial3: true, // enable
+          useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         ),
-        home: MyHomePage(), // set the homepage
+        home: MyHomePage(),
       ),
     );
   }
 }
 
-// use of change notifiier means it can notify others about its own changes
 class MyAppState extends ChangeNotifier {
-  // allow widgets to listen for state changes
-  var current = WordPair.random(); // store randomly generated word pair
+  var current = WordPair.random();
+  var history = <WordPair>[];
+
+  GlobalKey? historyListKey;
 
   void getNext() {
+    history.insert(0, current);
+    var animatedList = historyListKey?.currentState as AnimatedListState?;
+    animatedList?.insertItem(0);
     current = WordPair.random();
     notifyListeners();
   }
 
   var favorites = <WordPair>[];
 
-  void toggleFavorite() {
-    if (favorites.contains(current)) {
-      favorites.remove(current);
+  void toggleFavorite([WordPair? pair]) {
+    pair = pair ?? current;
+    if (favorites.contains(pair)) {
+      favorites.remove(pair);
     } else {
-      favorites.add(current);
+      favorites.add(pair);
     }
     notifyListeners();
   }
-}
 
-// ...
+  void removeFavorite(WordPair pair) {
+    favorites.remove(pair);
+    notifyListeners();
+  }
+}
 
 class MyHomePage extends StatefulWidget {
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-//
 class _MyHomePageState extends State<MyHomePage> {
-  var selectedIndex = 0; // store for page
+  var selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    var colorScheme = Theme.of(context).colorScheme;
+
     Widget page;
     switch (selectedIndex) {
       case 0:
@@ -81,41 +79,77 @@ class _MyHomePageState extends State<MyHomePage> {
         throw UnimplementedError('no widget for $selectedIndex');
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Scaffold(
-          body: Row(
-            children: [
-              // ensure child is not obscured by a hardware notch or status bar
-              SafeArea(
-                child: NavigationRail(
-                  extended: constraints.maxWidth >= 600,
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.favorite),
-                      label: Text('Favorites'),
-                    ),
-                  ],
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (value) {
-                    setState(() => selectedIndex = value);
-                  },
+    // The container for the current page, with its background color
+    // and subtle switching animation.
+    var mainArea = ColoredBox(
+      color: colorScheme.surfaceContainerHighest,
+      child: AnimatedSwitcher(
+        duration: Duration(milliseconds: 200),
+        child: page,
+      ),
+    );
+
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 450) {
+            // Use a more mobile-friendly layout with BottomNavigationBar
+            // on narrow screens.
+            return Column(
+              children: [
+                Expanded(child: mainArea),
+                SafeArea(
+                  child: BottomNavigationBar(
+                    items: [
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.home),
+                        label: 'Home',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.favorite),
+                        label: 'Favorites',
+                      ),
+                    ],
+                    currentIndex: selectedIndex,
+                    onTap: (value) {
+                      setState(() {
+                        selectedIndex = value;
+                      });
+                    },
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Container(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: page,
+              ],
+            );
+          } else {
+            return Row(
+              children: [
+                SafeArea(
+                  child: NavigationRail(
+                    extended: constraints.maxWidth >= 600,
+                    destinations: [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.home),
+                        label: Text('Home'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.favorite),
+                        label: Text('Favorites'),
+                      ),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (value) {
+                      setState(() {
+                        selectedIndex = value;
+                      });
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+                Expanded(child: mainArea),
+              ],
+            );
+          }
+        },
+      ),
     );
   }
 }
@@ -137,6 +171,8 @@ class GeneratorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Expanded(flex: 3, child: HistoryListView()),
+          SizedBox(height: 10),
           BigCard(pair: pair),
           SizedBox(height: 10),
           Row(
@@ -158,6 +194,7 @@ class GeneratorPage extends StatelessWidget {
               ),
             ],
           ),
+          Spacer(flex: 2),
         ],
       ),
     );
@@ -171,22 +208,32 @@ class BigCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final style = theme.textTheme.displayMedium!.copyWith(
+    var theme = Theme.of(context);
+    var style = theme.textTheme.displayMedium!.copyWith(
       color: theme.colorScheme.onPrimary,
     );
 
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Card(
-        color: theme.colorScheme.primary,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            "${pair.first} ${pair.second}",
-            style: style,
-            semanticsLabel: "${pair.first} ${pair.second}",
+    return Card(
+      color: theme.colorScheme.primary,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: AnimatedSize(
+          duration: Duration(milliseconds: 200),
+          // Make sure that the compound word wraps correctly when the window
+          // is too narrow.
+          child: MergeSemantics(
+            child: Wrap(
+              children: [
+                Text(
+                  pair.first,
+                  style: style.copyWith(fontWeight: FontWeight.w200),
+                ),
+                Text(
+                  pair.second,
+                  style: style.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -194,147 +241,115 @@ class BigCard extends StatelessWidget {
   }
 }
 
-// stateless depends on its own configuration
-class GreenFrog extends StatelessWidget {
-  const GreenFrog({super.key});
-
-  // describe the part of the UI represented by this widet
+class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // returns a container widget witha fixed green color
-    return IntrinsicWidth(child: Container(color: const Color(0xFF2DBD3A)));
-  }
-}
+    var theme = Theme.of(context);
+    var appState = context.watch<MyAppState>();
 
-// more flexible but still stateless widget
-class Frog extends StatelessWidget {
-  // we now call Frog with a color, and child widget
-  const Frog({super.key, this.color = const Color(0xFF2DBD3A), this.child});
+    if (appState.favorites.isEmpty) {
+      return Center(child: Text('No favorites yet.'));
+    }
 
-  final Color color;
-  final Widget? child; // for embedding another widget
-
-  @override
-  Widget build(BuildContext context) {
-    // return a ColoredBox widget on build
-    return ColoredBox(color: color, child: child);
-  }
-}
-
-// can maintain mutable state throughout its lifecycle
-class YellowBird extends StatefulWidget {
-  const YellowBird({
-    super.key,
-  }); // constructor helps widget id in lists and anim
-  @override
-  State<YellowBird> createState() => _YellowBirdState(); // creates associated state class
-}
-
-// responsible for the UI and state management of YellowBird
-class _YellowBirdState extends State<YellowBird> {
-  @override
-  Widget build(BuildContext context) {
-    // return Container
-    return Container(
-      color: const Color(0xFFFFE306),
-    ); // represents a yellow color
-  }
-}
-
-// Bird can have mutable state, defined in _BirdData
-class Bird extends StatefulWidget {
-  const Bird({
-    super.key,
-    this.color = const Color(0xFFFFE306),
-    this.child,
-  }); // color params
-
-  final Color color;
-  final Widget? child; // wrapper ready
-
-  @override
-  State<Bird> createState() => _BirdState(); // return instance of _BirdState
-}
-
-// managing the mutable state
-class _BirdState extends State<Bird> {
-  double _size = 1.0; // controls scaling transformation
-
-  void grow() {
-    setState(() {
-      // trigger rebuild
-      _size += 0.1; // increase size
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: widget.color, // set background
-      transform: Matrix4.diagonal3Values(_size, _size, 1.0), // scale the widget
-      child:
-          widget
-              .child, // child passed to Bird will be rendered inside container
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(30),
+          child: Text(
+            'You have '
+            '${appState.favorites.length} favorites:',
+          ),
+        ),
+        Expanded(
+          // Make better use of wide windows with a grid.
+          child: GridView(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 400,
+              childAspectRatio: 400 / 80,
+            ),
+            children: [
+              for (var pair in appState.favorites)
+                ListTile(
+                  leading: IconButton(
+                    icon: Icon(Icons.delete_outline, semanticLabel: 'Delete'),
+                    color: theme.colorScheme.primary,
+                    onPressed: () {
+                      appState.removeFavorite(pair);
+                    },
+                  ),
+                  title: Text(
+                    pair.asLowerCase,
+                    semanticsLabel: pair.asPascalCase,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-class FavoritesPage extends StatelessWidget {
+class HistoryListView extends StatefulWidget {
+  const HistoryListView({super.key});
+
+  @override
+  State<HistoryListView> createState() => _HistoryListViewState();
+}
+
+class _HistoryListViewState extends State<HistoryListView> {
+  /// Needed so that [MyAppState] can tell [AnimatedList] below to animate
+  /// new items.
+  final _key = GlobalKey();
+
+  /// Used to "fade out" the history items at the top, to suggest continuation.
+  static const Gradient _maskingGradient = LinearGradient(
+    // This gradient goes from fully transparent to fully opaque black...
+    colors: [Colors.transparent, Colors.black],
+    // ... from the top (transparent) to half (0.5) of the way to the bottom.
+    stops: [0.0, 0.5],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<MyAppState>(
-      builder: (context, appState, child) {
-        var favorites = appState.favorites;
-        print("Favorites count: ${favorites.length}");
+    final appState = context.watch<MyAppState>();
+    appState.historyListKey = _key;
 
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Favorites",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return ShaderMask(
+      shaderCallback: (bounds) => _maskingGradient.createShader(bounds),
+      // This blend mode takes the opacity of the shader (i.e. our gradient)
+      // and applies it to the destination (i.e. our animated list).
+      blendMode: BlendMode.dstIn,
+      child: AnimatedList(
+        key: _key,
+        reverse: true,
+        padding: EdgeInsets.only(top: 100),
+        initialItemCount: appState.history.length,
+        itemBuilder: (context, index, animation) {
+          final pair = appState.history[index];
+          return SizeTransition(
+            sizeFactor: animation,
+            child: Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite(pair);
+                },
+                icon:
+                    appState.favorites.contains(pair)
+                        ? Icon(Icons.favorite, size: 12)
+                        : SizedBox(),
+                label: Text(
+                  pair.asLowerCase,
+                  semanticsLabel: pair.asPascalCase,
                 ),
-                const SizedBox(height: 10),
-
-                // Show message if no favorites
-                if (favorites.isEmpty)
-                  const Text(
-                    "No favorites added yet.",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  )
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: favorites.length,
-                      itemBuilder: (context, index) {
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 5,
-                            horizontal: 10,
-                          ),
-                          child: ListTile(
-                            leading: const Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                            ),
-                            title: Text(
-                              "${favorites[index].first} ${favorites[index].second}",
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
