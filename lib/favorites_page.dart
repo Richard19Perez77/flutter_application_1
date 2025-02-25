@@ -17,9 +17,7 @@ class FavoritesPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(30),
-          child: Text(
-            'You have ${appState.favorites.length} favorites:',
-          ),
+          child: Text('You have ${appState.favorites.length} favorites:'),
         ),
         Expanded(
           child: GridView(
