@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -379,6 +381,7 @@ class ImagePickerApp extends StatefulWidget {
 
 class _ImagePickerAppState extends State<ImagePickerApp> {
   Uint8List? _selectedImage;
+  String? _asciiImageUrl;
 
   // ✅ Pick Image Based on Platform
   Future<void> _pickImage() async {
@@ -392,7 +395,10 @@ class _ImagePickerAppState extends State<ImagePickerApp> {
         final bytes = await pickedFile.readAsBytes();
         setState(() {
           _selectedImage = bytes;
+          _asciiImageUrl = null;
         });
+        print("call startAsciiWork:${bytes.length}");
+        startAsciiWork(bytes);
       }
     } else {
       // Mobile/Desktop: Use `image_picker`
@@ -403,7 +409,45 @@ class _ImagePickerAppState extends State<ImagePickerApp> {
         final bytes = await pickedFile.readAsBytes();
         setState(() {
           _selectedImage = bytes;
+          _asciiImageUrl = null;
         });
+        print("call startAsciiWork:${bytes.length}");
+        startAsciiWork(bytes);
+      }
+    }
+  }
+
+  startAsciiWork(Uint8List bytes) async {
+    print("in startAsciiWork:${bytes.length}");
+    if (bytes.isNotEmpty) {
+      var url = Uri.parse("https://api.deepai.org/api/deepdream");
+      var request = http.MultipartRequest("POST", url);
+      request.headers["api-key"] = "7876ce66-9148-4659-9be5-a8e089262d40";
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          "image",
+          _selectedImage!,
+          filename: "upload.jpg",
+        ),
+      );
+
+      try {
+        var response = await request.send();
+        print("in startAsciiWork:${response.contentLength}");
+        var responseData = await response.stream.bytesToString();
+        print("in startAsciiWork:${responseData.length}");
+        var jsonResponse = jsonDecode(responseData);
+        print("in startAsciiWork:${jsonResponse.hashCode}");
+        print("in startAsciiWork:${jsonResponse.toString()}");
+
+        if (jsonResponse["output_url"] != null) {
+          setState(() {
+            _asciiImageUrl = jsonResponse["output_url"];
+            print("_asciiImageUrl:$_asciiImageUrl");
+          });
+        }
+      } catch (e) {
+        print("Error: $e");
       }
     }
   }
@@ -420,10 +464,24 @@ class _ImagePickerAppState extends State<ImagePickerApp> {
               onPressed: _pickImage,
               child: const Text("Select Image"),
             ),
-            if (_selectedImage != null) ...[
-              const SizedBox(height: 10),
-              Image.memory(_selectedImage!, height: 200),
-            ],
+            Row(
+              children: [
+                if (_selectedImage != null) ...[
+                  const SizedBox(height: 10, width: 10),
+                  Image.memory(_selectedImage!, height: 200),
+                ],
+                const SizedBox(height: 10, width: 10),
+                if (_asciiImageUrl != null) ...[
+                  const SizedBox(height: 10, width: 10),
+                  Image.network(_asciiImageUrl!, height: 200),
+                ],
+                const SizedBox(height: 10, width: 10),
+                if (_selectedImage != null) ...[
+                  const SizedBox(height: 10, width: 10),
+                  Image.memory(_selectedImage!, height: 200),
+                ],
+              ],
+            ),
           ],
         ),
       ),
