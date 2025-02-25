@@ -46,26 +46,28 @@ void main() {
     expect(wordBefore, isNot(equals(wordAfter)));
   });
 
-  // testWidgets('Navigates to Favorites Page', (WidgetTester tester) async {
-  //   await tester.pumpWidget(testApp);
-  //   await tester.pumpAndSettle();
+  testWidgets('Navigates to Favorites Page', (WidgetTester tester) async {
+    await tester.pumpWidget(testApp);
+    await tester.pumpAndSettle();
 
-  //   await tester.tap(find.byIcon(Icons.favorite));
-  //   await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
 
-  //   expect(find.text('Favorites'), findsOneWidget);
-  // });
+    // (Optional) Ensure it contains the exact text
+    final Text noFavoritesText = tester.widget(find.byKey(Key('no_favorites_yet')));
+    expect(noFavoritesText.data, equals('No favorites yet.'));
+  });
 
-  // testWidgets('Navigates back to Home Page', (WidgetTester tester) async {
-  //   await tester.pumpWidget(testApp);
-  //   await tester.pumpAndSettle();
+  testWidgets('Navigates back to Home Page', (WidgetTester tester) async {
+    await tester.pumpWidget(testApp);
+    await tester.pumpAndSettle();
 
-  //   await tester.tap(find.byIcon(Icons.favorite));
-  //   await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
 
-  //   await tester.tap(find.byIcon(Icons.home));
-  //   await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.home));
+    await tester.pumpAndSettle();
 
-  //   expect(find.text('Like'), findsOneWidget);
-  // });
+    expect(find.text('Like'), findsOneWidget);
+  });
 }
