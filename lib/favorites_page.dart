@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_state.dart';
 
-class FavoritesPage extends StatelessWidget {
+class FavoritesPage extends ConsumerWidget {
+  const FavoritesPage({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    var appState = context.watch<MyAppState>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final appState = ref.watch(appStateProvider);
+    final appStateNotifier = ref.read(appStateProvider.notifier);
 
     if (appState.favorites.isEmpty) {
-      return Center(child: Text('No favorites yet.', key: Key('no_favorites_yet')));
+      return const Center(child: Text('No favorites yet.', key: Key('no_favorites_yet')));
     }
 
     return Column(
@@ -21,7 +24,7 @@ class FavoritesPage extends StatelessWidget {
         ),
         Expanded(
           child: GridView(
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 400,
               childAspectRatio: 400 / 80,
             ),
@@ -29,10 +32,10 @@ class FavoritesPage extends StatelessWidget {
               for (var pair in appState.favorites)
                 ListTile(
                   leading: IconButton(
-                    icon: Icon(Icons.delete_outline, semanticLabel: 'Delete'),
+                    icon: const Icon(Icons.delete_outline, semanticLabel: 'Delete'),
                     color: theme.colorScheme.primary,
                     onPressed: () {
-                      appState.removeFavorite(pair);
+                      appStateNotifier.removeFavorite(pair);
                     },
                   ),
                   title: Text(

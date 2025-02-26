@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'generator_page.dart';
 import 'favorites_page.dart';
 import 'image_picker_app.dart';
 
-class MyHomePage extends StatefulWidget {
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+// Riverpod state for selected index
+final selectedIndexProvider = StateProvider<int>((ref) => 0);
 
-class _MyHomePageState extends State<MyHomePage> {
-  var selectedIndex = 0;
+class MyHomePage extends ConsumerWidget {
+  const MyHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    var colorScheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(selectedIndexProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     Widget page;
     switch (selectedIndex) {
@@ -24,13 +24,13 @@ class _MyHomePageState extends State<MyHomePage> {
       case 2:
         page = ImagePickerApp();
       default:
-        throw UnimplementedError('no widget for $selectedIndex');
+        throw UnimplementedError('No widget for index $selectedIndex');
     }
 
-    var mainArea = ColoredBox(
+    final mainArea = ColoredBox(
       color: colorScheme.surfaceContainerHighest,
       child: AnimatedSwitcher(
-        duration: Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 200),
         child: page,
       ),
     );
@@ -44,26 +44,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: mainArea),
                 SafeArea(
                   child: BottomNavigationBar(
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.home),
-                        label: 'Home',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.favorite),
-                        label: 'Favorites',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.upload),
-                        label: 'Image Uploader',
-                      ),
+                    items: const [
+                      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                      BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+                      BottomNavigationBarItem(icon: Icon(Icons.upload), label: 'Image Uploader'),
                     ],
                     currentIndex: selectedIndex,
-                    onTap: (value) {
-                      setState(() {
-                        selectedIndex = value;
-                      });
-                    },
+                    onTap: (value) => ref.read(selectedIndexProvider.notifier).state = value,
                   ),
                 ),
               ],
@@ -74,26 +61,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 SafeArea(
                   child: NavigationRail(
                     extended: constraints.maxWidth >= 600,
-                    destinations: [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.home),
-                        label: Text('Home'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.favorite),
-                        label: Text('Favorites'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.upload),
-                        label: Text('Image Uploader'),
-                      ),
+                    destinations: const [
+                      NavigationRailDestination(icon: Icon(Icons.home), label: Text('Home')),
+                      NavigationRailDestination(icon: Icon(Icons.favorite), label: Text('Favorites')),
+                      NavigationRailDestination(icon: Icon(Icons.upload), label: Text('Image Uploader')),
                     ],
                     selectedIndex: selectedIndex,
-                    onDestinationSelected: (value) {
-                      setState(() {
-                        selectedIndex = value;
-                      });
-                    },
+                    onDestinationSelected: (value) => ref.read(selectedIndexProvider.notifier).state = value,
                   ),
                 ),
                 Expanded(child: mainArea),

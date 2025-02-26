@@ -1,20 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:english_words/english_words.dart';
 
-class MyAppState extends ChangeNotifier {
+class MyAppState extends Notifier<MyAppState> {
   var current = WordPair.random();
-  var history = <WordPair>[];
-  GlobalKey? historyListKey;
+  final List<WordPair> history = [];
+  final List<WordPair> favorites = [];
 
   void getNext() {
     history.insert(0, current);
-    var animatedList = historyListKey?.currentState as AnimatedListState?;
-    animatedList?.insertItem(0);
     current = WordPair.random();
-    notifyListeners();
+    state = MyAppState()..copyFrom(this); // Update state properly
   }
-
-  var favorites = <WordPair>[];
 
   void toggleFavorite([WordPair? pair]) {
     pair = pair ?? current;
@@ -23,11 +19,22 @@ class MyAppState extends ChangeNotifier {
     } else {
       favorites.add(pair);
     }
-    notifyListeners();
+    state = MyAppState()..copyFrom(this);
   }
 
   void removeFavorite(WordPair pair) {
     favorites.remove(pair);
-    notifyListeners();
+    state = MyAppState()..copyFrom(this);
   }
+
+  void copyFrom(MyAppState oldState) {
+    history.addAll(oldState.history);
+    favorites.addAll(oldState.favorites);
+    current = oldState.current;
+  }
+
+  @override
+  MyAppState build() => MyAppState();
 }
+
+final appStateProvider = NotifierProvider<MyAppState, MyAppState>(() => MyAppState());

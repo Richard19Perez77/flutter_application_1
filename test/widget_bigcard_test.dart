@@ -5,8 +5,8 @@ import 'package:english_words/english_words.dart';
 
 void main() {
   testWidgets('BigCard displays the WordPair correctly', (WidgetTester tester) async {
-    // Create a sample word pair
-    final testPair = WordPair('hello', 'world');
+    // Create a sample WordPair
+    final testPair = WordPair('new', 'pair');
 
     // Build the widget inside a MaterialApp (to provide a Theme)
     await tester.pumpWidget(
@@ -18,10 +18,10 @@ void main() {
     );
 
     // Verify if the text from the WordPair is displayed correctly
-    expect(find.text('hello'), findsOneWidget);
-    expect(find.text('world'), findsOneWidget);
+    expect(find.text('new'), findsOneWidget);
+    expect(find.text('pair'), findsOneWidget);
 
-    // Ensure the card exists in the widget tree
+    // Ensure the Card widget exists in the widget tree
     expect(find.byType(Card), findsOneWidget);
   });
 
@@ -39,11 +39,11 @@ void main() {
       ),
     );
 
-    final Text helloText = tester.widget(find.text('test'));
-    final Text worldText = tester.widget(find.text('style'));
+    final Text firstText = tester.widget(find.text('test'));
+    final Text secondText = tester.widget(find.text('style'));
 
     // Verify text styles
-    expect(helloText.style?.fontWeight, FontWeight.w200);
-    expect(worldText.style?.fontWeight, FontWeight.bold);
+    expect(firstText.style?.fontWeight ?? FontWeight.normal, FontWeight.w200);
+    expect(secondText.style?.fontWeight ?? FontWeight.normal, FontWeight.bold);
   });
 }
